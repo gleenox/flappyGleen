@@ -166,6 +166,20 @@ exports = Class(ui.View, function (supr) {
 			color: 'white'
 		});
 
+		this.over = new ui.TextView({
+				superview: this,
+				x: 120,
+				y: 100,
+				width: 320,
+				height: 50,
+				autoSize: false,
+				size: 38,
+				verticalAlign: 'middle',
+				horizontalAlign: 'center',
+				wrap: false,
+				color: 'white',
+			});
+
 		this.on('InputStart', bind(this, function () {
 			if(this.finish)
 				this.emit('game:end')
@@ -210,20 +224,7 @@ exports = Class(ui.View, function (supr) {
 		
 		this.scoreBoard.setText(score);
 		if(this.finish == true){
-			this.over = new ui.TextView({
-				superview: this,
-				x: 120,
-				y: 100,
-				width: 320,
-				height: 50,
-				autoSize: false,
-				size: 38,
-				verticalAlign: 'middle',
-				horizontalAlign: 'center',
-				wrap: false,
-				color: 'white',
-				text: 'Game Over'
-			});
+			this.over.setText('Game Over');
 		};
 	};
 
@@ -237,6 +238,7 @@ exports = Class(ui.View, function (supr) {
 	this.startGame = function () {
 		first = true;
 		score = 0;
+		this.over.setText('');
 		animate(this.parallaxView).commit();
 		this.parallaxView.scrollTo(0,0);
 		this.parallaxView.clear();
@@ -247,6 +249,7 @@ exports = Class(ui.View, function (supr) {
 		this.player.setAcceleration(0, 1400);
 		this.player.setCollisionEnabled(true);
 		this.player.resume();
+		// this.over.removeFromSuperview();
 		Physics.start();
 
 
