@@ -7,6 +7,7 @@ import math.util as util;
 import ui.ImageView;
 import ui.SpriteView as SpriteView;
 import animate;
+import AudioManager;
 
 var defaults = {
 	backgroundColor: 'red'
@@ -23,6 +24,7 @@ exports = Class(ui.View, function (supr) {
 
 		this.setupParallaxView();
 		this.setupPlayer();
+		this.loadSound();
 		this.on('game:start' , function(){	
 			this.startGame();
 		});
@@ -47,9 +49,9 @@ exports = Class(ui.View, function (supr) {
 		this.parallaxView.addLayer({
 			distance: 10,
 			populate: function (layer, x) {
-				var view = layer.obtainView(ui.View, {
+				var view = layer.obtainView(ui.ImageView, {
+					image: 'resources/images/ground.png',
 					superview: layer,
-					backgroundColor: 'brown',
 					x: x,
 					y: layer.style.height - 50,
 					width: 200,
@@ -78,26 +80,26 @@ exports = Class(ui.View, function (supr) {
 					backgroundColor: 'blue',
 					x: x + 20,
 					y: util.random(150 , playerLayer.style.height - 400),
-					width: 1,
-					height: util.random(150,400),
+					width: 0.1,
+					height: util.random(150,300),
 					
 				});
 
-				var pipe1 = playerLayer.obtainView(ui.View, {
+				var pipe1 = playerLayer.obtainView(ui.ImageView, {
 					superview: playerLayer,
-					backgroundColor: 'green',
+					image: 'resources/images/tube.png',
 					x: x,
-					y: pipeTrigger.style.height + pipeTrigger.style.y,
-					width: 50,
+					y: pipeTrigger.style.height + pipeTrigger.style.y + 5,
+					width: 65,
 					height: playerLayer.style.height - 50 - (pipeTrigger.style.height + pipeTrigger.style.y)
 				});
 
-				var pipe2 = playerLayer.obtainView(ui.View, {
+				var pipe2 = playerLayer.obtainView(ui.ImageView, {
 					superview: playerLayer,
-					backgroundColor: 'green',
+					image: 'resources/images/tube2.png',
 					x: x,
 					y: 0,
-					width:50,
+					width:65,
 					height: pipeTrigger.style.y
 				})
 
@@ -119,13 +121,23 @@ exports = Class(ui.View, function (supr) {
 		});
 	};
 
+	this.loadSound = function (){
+		this.sound = new AudioManager({
+			path: "resources/audio",
+			files: {
+				jump: { volume: 1, path: 'effects'},
+				point: { vlolume: 1, path: 'effects'},
+			}
+		});
+	};
+
 	this.setupPlayer = function () {
 		// this.player = new ui.View({
 		// 	height: 50,
 		// 	width: 50,
 		// 	x: 0,
 		// 	y: 0,
-		// 	zIndex: 99999,
+		// 	
 		// 	backgroundColor: 'yellow'
 		// });
 		
@@ -133,13 +145,14 @@ exports = Class(ui.View, function (supr) {
 		this.player = new SpriteView({
 		  x: 0,
 		  y: 0,
-		  width: 50,
-		  height: 50,
+		  width: 65,
+		  height: 65,
 		  url: 'resources/images/gleen/gleen',
 		  frameRate: 10,
 		  defaultAnimation: 'fly',
 		  loop: true,
-		  autoStart: true
+		  autoStart: true,
+		  zIndex: 99999,
 		});
 		
 		Physics.addToView(this.player, {
@@ -151,7 +164,7 @@ exports = Class(ui.View, function (supr) {
 				height: 30,
 			}
 		});
-
+		this.player.setCollisionEnabled(true);
 		this.scoreBoard = new ui.TextView({
 			superview: this,
 			x: 120,
@@ -159,7 +172,7 @@ exports = Class(ui.View, function (supr) {
 			width: 320,
 			height: 50,
 			autoSize: false,
-			size: 38,
+			size: 100,
 			verticalAlign: 'middle',
 			horizontalAlign: 'center',
 			wrap: false,
@@ -181,10 +194,12 @@ exports = Class(ui.View, function (supr) {
 			});
 
 		this.on('InputStart', bind(this, function () {
-			if(this.finish)
-				this.emit('game:end')
-			else
+			if(this.finish){
+				this.emit('game:end');
+			}else{
 				this.player.velocity.y = -500;
+				this.sound.play('jump');
+			}
 		}));
 	};
 
@@ -196,12 +211,16 @@ exports = Class(ui.View, function (supr) {
 		var hits = this.player.getCollisions('ground');
 		for (var i = 0; i < hits.length; i++) {
 			var hit = hits[i];
-			if (this.player.getPrevBottom() <= hit.view.getTop() && this.player.velocity.y >= 0) {
+			if (this.player.getPrevBottom() <= hit.view.getTop()+ 10 && this.player.velocity.y >= 0) {
 				this.player.position.y -= hit.intersection.height;
 				this.player.velocity.y = 0;
+				this.player.velocity.x = 0;
+				this.player.acceleration.x = 0; 
 				this.stopWorld();
 				this.finish = true;
+
 			}
+			console.log(hits.length);
 		}
 
 		var hits2 = this.player.getCollisions('pipe');
@@ -215,7 +234,7 @@ exports = Class(ui.View, function (supr) {
 		var hits3 = this.player.getCollisions('pipeTrigger');
 		for (var i = 0; i < hits3.length; i++) {
 			var hit = hits3[i];
-			
+				this.sound.play('point');
 				score= score + 1;
 				hit.view.setCollisionEnabled(false);
 				hit.view.removeFromSuperview();
